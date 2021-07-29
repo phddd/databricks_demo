@@ -175,7 +175,7 @@ turbine_stream.join(turbine_status, ['id'], 'left') \
 # MAGIC %sql
 # MAGIC -- DESCRIBE HISTORY turbine_gold;
 # MAGIC -- If needed, we can go back in time to select a specific version or timestamp
-# MAGIC SELECT * FROM turbine_gold VERSION AS OF 1
+# MAGIC SELECT * FROM turbine_gold VERSION AS OF 15 where timestamp < '2020-05-01'
 # MAGIC 
 # MAGIC -- And restore a given version
 # MAGIC -- RESTORE turbine_gold TO TIMESTAMP AS OF '2020-12-01'
