@@ -26,7 +26,7 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./resources/00-setup $reset_all_data=$reset_all_data
+# MAGIC %run ./resources/00-setup $reset_all_data=true
 
 # COMMAND ----------
 
@@ -56,6 +56,7 @@ display(dataset)
 # COMMAND ----------
 
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+import mlflow
 
 with mlflow.start_run():
   #the source table will automatically be logged to mlflow
@@ -104,14 +105,14 @@ with mlflow.start_run():
 # DBTITLE 1,Save our new model to the registry as a new version
 #get the best model having the best metrics.AUROC from the registry
 best_models = mlflow.search_runs(filter_string='tags.model="turbine_gbt" and attributes.status = "FINISHED" and metrics.f1 > 0', order_by=['metrics.f1 DESC'], max_results=1)
-model_registered = mlflow.register_model("runs:/" + best_models.iloc[0].run_id + "/turbine_gbt", "turbine_gbt")
+model_registered = mlflow.register_model("runs:/" + best_models.iloc[0].run_id + "/turbine_gbt", "turbine_gbt_pierre")
 
 # COMMAND ----------
 
 # DBTITLE 1,Flag this version as production ready
 client = mlflow.tracking.MlflowClient()
 print("registering model version "+model_registered.version+" as production model")
-client.transition_model_version_stage(name = "turbine_gbt", version = model_registered.version, stage = "Production", archive_existing_versions=True)
+client.transition_model_version_stage(name = "turbine_gbt_pierre", version = model_registered.version, stage = "Production", archive_existing_versions=True)
 
 # COMMAND ----------
 
@@ -121,7 +122,7 @@ client.transition_model_version_stage(name = "turbine_gbt", version = model_regi
 # COMMAND ----------
 
 # DBTITLE 1,Load the model from our registry
-model_from_registry = mlflow.spark.load_model('models:/turbine_gbt/production')
+model_from_registry = mlflow.spark.load_model('models:/turbine_gbt_pierre/production')
 
 # COMMAND ----------
 

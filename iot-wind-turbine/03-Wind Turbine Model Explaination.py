@@ -21,7 +21,7 @@
 
 # COMMAND ----------
 
-model_from_registry = mlflow.spark.load_model('models:/turbine_gbt/production')
+model_from_registry = mlflow.spark.load_model('models:/turbine_gbt_pierre/production')
 
 # COMMAND ----------
 

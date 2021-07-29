@@ -27,7 +27,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Let's prepare our data first
-# MAGIC %run ./resources/00-setup $reset_all_data=$reset_all_data
+# MAGIC %run ./resources/00-setup $reset_all_data=true
 
 # COMMAND ----------
 
@@ -93,6 +93,14 @@ bronzeDF.writeStream \
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC -- let's add some constraints in our table, to ensure or ID can't be negative (need DBR 7.5)
+# MAGIC ALTER TABLE turbine_silver ADD CONSTRAINT idGreaterThanZero CHECK (id >= 0);
+# MAGIC -- let's enable the auto-compaction
+# MAGIC alter table turbine_silver set tblproperties ('delta.autoOptimize.autoCompact' = true, 'delta.autoOptimize.optimizeWrite' = true);
+
+# COMMAND ----------
+
 jsonSchema = StructType([StructField(col, DoubleType(), False) for col in ["AN3", "AN4", "AN5", "AN6", "AN7", "AN8", "AN9", "AN10", "SPEED", "TORQUE", "ID"]] + [StructField("TIMESTAMP", TimestampType())])
 
 spark.readStream.table('turbine_bronze') \
@@ -107,11 +115,6 @@ spark.readStream.table('turbine_bronze') \
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC -- let's add some constraints in our table, to ensure or ID can't be negative (need DBR 7.5)
-# MAGIC ALTER TABLE turbine_silver ADD CONSTRAINT idGreaterThanZero CHECK (id >= 0);
-# MAGIC -- let's enable the auto-compaction
-# MAGIC alter table turbine_silver set tblproperties ('delta.autoOptimize.autoCompact' = true, 'delta.autoOptimize.optimizeWrite' = true);
-# MAGIC 
 # MAGIC -- Select data
 # MAGIC select * from turbine_silver;
 
@@ -155,19 +158,24 @@ turbine_stream.join(turbine_status, ['id'], 'left') \
 
 # MAGIC %md 
 # MAGIC ## Run DELETE/UPDATE/MERGE with DELTA ! 
-# MAGIC We just realized that something is wrong in the data before 2020! Let's DELETE all this data from our gold table as we don't want to have wrong value in our dataset
+# MAGIC We just realized that something is wrong in the data before june 2020! Let's DELETE all this data from our gold table as we don't want to have wrong value in our dataset
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC DELETE FROM turbine_gold where timestamp < '2020-00-01';
+# MAGIC DELETE FROM turbine_gold where timestamp < '2020-06-01';
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC DESCRIBE HISTORY turbine_gold;
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC -- DESCRIBE HISTORY turbine_gold;
 # MAGIC -- If needed, we can go back in time to select a specific version or timestamp
-# MAGIC SELECT * FROM turbine_gold TIMESTAMP AS OF '2020-12-01'
+# MAGIC SELECT * FROM turbine_gold VERSION AS OF 1
 # MAGIC 
 # MAGIC -- And restore a given version
 # MAGIC -- RESTORE turbine_gold TO TIMESTAMP AS OF '2020-12-01'
